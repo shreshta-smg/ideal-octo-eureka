@@ -19,35 +19,41 @@ class EventBookingResource extends Resource
 {
     protected static ?string $model = EventBooking::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('event_customer_id')
-                    ->relationship('eventCustomer', 'full_name')
-                    ->required(),
-                Forms\Components\TextInput::make('name_of_the_event')
-                    ->required()
-                    ->maxLength(144),
-                Forms\Components\Select::make('type_of_event')
-                    ->options(EventType::class)->default(EventType::NotSet)
-                    ->required(),
-                Forms\Components\DateTimePicker::make('start_date')
-                    ->seconds(false)->required(),
-                Forms\Components\DateTimePicker::make('end_date')
-                    ->seconds(false)->required(),
-                Forms\Components\TextInput::make('no_of_people_expected')
-                    ->required()
-                    ->numeric()
-                    ->default(0),
-                Forms\Components\TextInput::make('total_amount')
-                    ->numeric()
-                    ->default(0),
-                Forms\Components\TextInput::make('amount_paid')
-                    ->numeric()
-                    ->default(0),
+                Forms\Components\Section::make('Customer Info')->schema([
+                    Forms\Components\Select::make('event_customer_id')
+                        ->relationship('eventCustomer', 'full_name')
+                        ->required(),
+                ]),
+                Forms\Components\Section::make('Event Info')->schema([
+                    Forms\Components\TextInput::make('name_of_the_event')
+                        ->required()
+                        ->maxLength(144),
+                    Forms\Components\Select::make('type_of_event')
+                        ->options(EventType::class)->default(EventType::NotSet)
+                        ->required(),
+                    Forms\Components\DateTimePicker::make('start_date')
+                        ->seconds(false)->required(),
+                    Forms\Components\DateTimePicker::make('end_date')
+                        ->seconds(false)->required(),
+                    Forms\Components\TextInput::make('no_of_people_expected')
+                        ->required()
+                        ->numeric()
+                        ->default(0),
+                ]),
+                Forms\Components\Section::make('Amount Info')->schema([
+                    Forms\Components\TextInput::make('total_amount')
+                        ->numeric()
+                        ->default(0),
+                    Forms\Components\TextInput::make('amount_paid')
+                        ->numeric()
+                        ->default(0),
+                ])
             ]);
     }
 

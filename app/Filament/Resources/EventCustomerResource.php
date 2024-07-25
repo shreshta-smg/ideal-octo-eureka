@@ -16,7 +16,7 @@ class EventCustomerResource extends Resource
 {
     protected static ?string $model = EventCustomer::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
     public static function form(Form $form): Form
     {
@@ -64,8 +64,6 @@ class EventCustomerResource extends Resource
                 Tables\Columns\TextColumn::make('email_id')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('contact_number')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('alternate_number')
                     ->searchable(),
             ])
             ->filters([

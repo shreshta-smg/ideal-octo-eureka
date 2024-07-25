@@ -50,7 +50,7 @@ class GenerateEventBookingInvoice
             $this->createClient($authUser),
             $this->createCustomer($authUser, $eventCustomer, $bookedEvent)
         )->stream();
-        $bookedEvent->addMedia($generatedInvoiceForEvent)->toMediaCollection('invoices');
+        $bookedEvent->addMediaFromStream($generatedInvoiceForEvent)->toMediaCollection('invoices');
         $generatedInvoiceUrl = $bookedEvent->getMedia('invoices')[0]->getFullUrl();
         EventDetail::create([
             'detail_type' => DetailType::GeneratedInvoiceUrl,

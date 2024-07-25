@@ -17,7 +17,7 @@ class EventDetailResource extends Resource
 {
     protected static ?string $model = EventDetail::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-information-circle';
 
     public static function form(Form $form): Form
     {
@@ -31,15 +31,19 @@ class EventDetailResource extends Resource
                     ->label('Details')
                     ->maxLength(255)
                     ->default(null),
-                Forms\Components\TextInput::make('other_requirements')
-                    ->maxLength(255)
-                    ->default(null),
                 Forms\Components\TextInput::make('amount')
                     ->numeric()
                     ->default(0),
                 Forms\Components\Select::make('event_booking_id')
                     ->relationship('eventBooking', 'name_of_the_event')
                     ->required(),
+                Forms\Components\MarkdownEditor::make('other_requirements')
+                    ->maxLength(255)
+                    ->default(null)
+                    ->disableToolbarButtons([
+                        'blockquote',
+                        'strike',
+                    ])->columnSpanFull(),
             ]);
     }
 
@@ -71,7 +75,7 @@ class EventDetailResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('EventBooking')
-                ->relationship('eventBooking', 'name_of_the_event'),
+                    ->relationship('eventBooking', 'name_of_the_event'),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
