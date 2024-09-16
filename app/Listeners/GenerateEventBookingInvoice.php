@@ -32,7 +32,7 @@ class GenerateEventBookingInvoice
         $eventDetails = $bookedEvent->eventDetails()->get();
         $numberOfDays = ceil(Carbon::parse($bookedEvent->start_date)->diffInDays(Carbon::parse($bookedEvent->end_date)));
         $calculatedTAQuery = $eventDetails->firstWhere('detail_type', '==', DetailType::CalculatedTotalAmount->value);
-        $ctaForEvent = floatval($calculatedTAQuery->amount) ?? 0;
+        $ctaForEvent = $calculatedTAQuery != null ? floatval($calculatedTAQuery->amount) : 0;
         $generatedUrlExists = $eventDetails->firstWhere('detail_type', '==', DetailType::GeneratedInvoiceUrl->name);
         if ($ctaForEvent == 0) {
             warning('Please update the total amount!');
@@ -43,21 +43,27 @@ class GenerateEventBookingInvoice
             warning('Invoice Already Exists!');
             throw new Exception("Invoice Already Exists! for detailId: {$generatedUrlExists->id}");
         }
-        $generatedInvoiceForEvent = $this->generateInvoice(
+        $invoiceResource = $this->generateInvoice(
             $bookedEvent,
             $numberOfDays,
             $eventDetails,
             $this->createClient($authUser),
             $this->createCustomer($authUser, $eventCustomer, $bookedEvent)
-        )->stream();
-        $bookedEvent->addMediaFromStream($generatedInvoiceForEvent)->toMediaCollection('invoices');
-        $generatedInvoiceUrl = $bookedEvent->getMedia('invoices')[0]->getFullUrl();
+        );
+        $generatedInvoiceForEvent = $invoiceResource[0]->stream();
+        $genInv = $bookedEvent
+        ->addMediaFromStream($generatedInvoiceForEvent)
+        ->setFileName("$invoiceResource[1].pdf")
+        ->toMediaCollection('invoices');
+        $generatedInvoiceUrl = $genInv->getFullUrl();
         EventDetail::create([
             'detail_type' => DetailType::GeneratedInvoiceUrl,
             'event_booking_id' => $bookedEvent->id,
             'details_value' => $generatedInvoiceUrl,
         ]);
         info('Generated Invoice! for order: ' . $bookedEvent->invoice_number);
+        Notification::make()->title('Generated Invoice!')
+        ->info()->seconds(2)->send();
     }
 
     private function createClient(User $user)
@@ -134,6 +140,7 @@ class GenerateEventBookingInvoice
         $totalAmountIncTaxes = $totalAmount->amount;
         $taxAmt = $eventBooking->total_amount * ($taxRate / 100);
         $totalTaxableAmount = $totalAmountIncTaxes - $taxAmt;
+        $invoiceFileName = str()->slug($client->name) . '_' . str()->slug($customer->name);
         $generatedInvoice = Invoice::make('bill')
             ->template('shubha')
             ->series('SH')
@@ -154,11 +161,10 @@ class GenerateEventBookingInvoice
             ->currencyDecimalPoint('.')
             ->taxableAmount($totalTaxableAmount)
             ->totalAmount($totalAmountIncTaxes)
-            ->filename(str()->slug($client->name) . '_' . str()->slug($customer->name))
+            ->filename($invoiceFileName)
             ->addItems($invoiceItems)
             ->notes($notes)
-            ->logo(public_path('assets/logo/shreshtasmg.png'))
-            ->save('public');
-        return $generatedInvoice;
+            ->logo(public_path('assets/logo/shreshtasmg.png'));
+        return [$generatedInvoice, $invoiceFileName];
     }
 }

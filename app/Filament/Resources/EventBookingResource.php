@@ -2,18 +2,24 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\DetailType;
 use App\Enums\EventType;
 use App\Filament\Resources\EventBookingResource\Pages;
 use App\Models\EventBooking;
+use App\Models\EventDetail;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 
 class EventBookingResource extends Resource
 {
@@ -48,11 +54,9 @@ class EventBookingResource extends Resource
                 ]),
                 Forms\Components\Section::make('Amount Info')->schema([
                     Forms\Components\TextInput::make('total_amount')
-                        ->numeric()
-                        ->default(0),
+                ->numeric()->default(0),
                     Forms\Components\TextInput::make('amount_paid')
-                        ->numeric()
-                        ->default(0),
+                ->numeric()->default(0),
                 ])
             ]);
     }
@@ -103,6 +107,33 @@ class EventBookingResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\Action::make('download')
+                    ->label("")
+                    ->action(
+                        function ($record) {
+                            $eventBooking = EventBooking::find($record->id);
+                            $eventDetails = $eventBooking->eventDetails;
+                            $eventDetail = $eventDetails->filter(fn(EventDetail $ed) => DetailType::GeneratedInvoiceUrl->name == $ed->detail_type)
+                                ->first();
+                            $ebs = $eventBooking->getMedia('invoices');
+                            if (!Arr::exists($ebs, 0)) {
+                                Notification::make()->title('No files found')
+                                    ->danger()->seconds(2)->send();
+                                return;
+                            }
+                            $eb = $ebs[0];
+                            $fileUrl = $eventDetail->details_value;
+                            $filePath = parse_url($fileUrl)["path"];
+                            if (!file_exists(public_path() . $filePath)) {
+                                Notification::make()->title('No file found')
+                                    ->danger()->seconds(2)->send();
+                                return;
+                            }
+                            return response()->download(public_path() . $filePath, $eb->file_name);
+                        }
+
+                    )->outlined()->color('info')
+                    ->icon('heroicon-o-arrow-down-tray'),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

@@ -63,12 +63,8 @@ class EventDetailResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('detail_type'),
-                Tables\Columns\TextColumn::make('details_value')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('amount')
-                    ->numeric()
-                    ->sortable(),
+            Tables\Columns\TextColumn::make('detail_type'),
+                Tables\Columns\TextColumn::make('details_value'),
                 Tables\Columns\TextColumn::make('eventBooking.name_of_the_event')
                     ->searchable(),
 
@@ -76,6 +72,8 @@ class EventDetailResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('EventBooking')
                     ->relationship('eventBooking', 'name_of_the_event'),
+            Tables\Filters\SelectFilter::make('detail_type')
+            ->options(DetailType::class),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
